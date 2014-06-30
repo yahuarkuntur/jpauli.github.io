@@ -1,21 +1,69 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-    <title>Julien Pauli PHP&#039;s life</title>
-    <subtitle></subtitle>
-    <link href="http://jpauli.github.io//feed/index.atom" rel="self" />
-    <link href="http://jpauli.github.io//" />
-        <id>http://jpauli.github.io//</id>
-            <updated>2014-06-27T00:00:00+00:00</updated>
-            <entry>
-        <title>Reference mismatch in PHP function calls</title>
-                <id>http://jpauli.github.io//2014/06/27/references-mismatch.html</id>
-                <updated>2014-06-27T00:00:00+00:00</updated>
-        <author>
-            <name>Julien Pauli</name>
-            <email>jpauli@php.net</email>
-        </author>
-        <link rel="alternate" type="text/html" href="http://jpauli.github.io//2014/06/27/references-mismatch.html"/>
-        <content type="html" xml:lang="en"><![CDATA[<h2 id="a-recall-on-references">A recall on references<a href="#a-recall-on-references" class="anchor">#</a></h2>
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <title>Reference mismatch in PHP function calls</title>
+
+    <meta name="description" content="">
+    <meta name="author" content="Julien Pauli">
+    <meta name="viewport" content="width=device-width">
+
+    
+    <link rel="canonical" href="http://jpauli.github.io//2014/06/27/references-mismatch.html"/>
+              <link rel="alternate" href="http://jpauli.github.io//feed/atom.xml" type="application/atom+xml" title="Julien Pauli PHP&#039;s life"/>
+      
+        <link rel="stylesheet" href="../../../css/bootstrap.min.css"><link rel="stylesheet" href="../../../css/bootstrap-responsive.min.css"><link rel="stylesheet" href="../../../css/main.css"><link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/pojoaque.min.css">    
+    <script src="../../../js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
+  </head>
+
+  <body>
+    <!--[if lt IE 7]>
+        <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
+    <![endif]-->
+
+    
+          <div class="navbar navbar-fixed-top">
+          <div class="navbar-inner">
+              <div class="container">
+                  <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                      <span class="icon-bar"></span>
+                      <span class="icon-bar"></span>
+                      <span class="icon-bar"></span>
+                  </a>
+                  <a class="brand" href="../../..">Julien Pauli PHP&#039;s life</a>
+                  <div class="nav-collapse collapse">
+                    <ul class="nav">
+                                                                                                            <li><a href="../../../about.html">About</a></li>
+                                                            <li><a href="../../../index.html">Welcome to julien pauli&#039;s page</a></li>
+                                                                                                </ul>
+                                      </div>
+              </div>
+          </div>
+      </div>
+    
+    
+          <div class="container">
+
+        
+                  <div class="row">
+            <div class="span10 offset1 content">
+                                                <div class="page-header">
+                    <h1>Reference mismatch in PHP function calls</h1>
+                  </div>
+                              
+                <article>
+    <div class="pull-right date">
+      <i class="icon-calendar"></i>
+      Jun 27th, 2014
+    </div>
+
+    <div class="body">
+      <h2 id="a-recall-on-references">A recall on references<a href="#a-recall-on-references" class="anchor">#</a></h2>
 
 <p>Once again, a coworker just pinged me about a huge memory usage in a Symfony2 based project.
 What is bad about Symfony2 ecosystem, is that people tend to use everyone else's code, because it
@@ -204,6 +252,34 @@ foo($str);
 as time pass and we ask PHP to build more and more complex systems, managing more and more data; knowing what happens
 behind the scene becomes more and more valuable.
 Scripting languages show advantages and drawbacks, and one should really master them all before choosing the right language.
-For example, I will not make PHP the first choice when talking about designing a language grammar parser.</p>]]></content>
-    </entry>
-    </feed>
+For example, I will not make PHP the first choice when talking about designing a language grammar parser.</p>
+    </div>
+
+      </article>
+            </div>
+          </div>
+        
+                          <footer>
+            <p>
+              &copy;
+                              <a href="http://jpauli.github.io/">
+                  Julien Pauli
+                </a>
+                            2014
+              <small>
+                with help from <a href="http://carew.github.com/" target="_blank">Carew</a>
+              </small>
+            </p>
+          </footer>
+        
+      </div>
+    
+    
+              <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+      <script>window.jQuery || document.write('<script src="../../../js/vendor/jquery-1.9.0.min.js"><\/script>')</script>
+      <script src="../../../js/vendor/bootstrap.min.js"></script>
+      <script src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script>
+    
+      </body>
+</html>

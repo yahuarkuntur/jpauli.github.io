@@ -1,6 +1,6 @@
 ---
-title: Welcome
-subtitle: to your new blog
+title: Welcome to Julien Pauli's page
+subtitle: My professionnal web life
 navigations: main
 ---
 
@@ -8,9 +8,3 @@ navigations: main
 
 {{ render_documents(paginate(carew.posts|reverse)) }}
 
-## Pages
-
-{{ render_documents(paginate(carew.pages)) }}
-
-
-Or you can {{ link('tags', 'browse all tags') }}.
