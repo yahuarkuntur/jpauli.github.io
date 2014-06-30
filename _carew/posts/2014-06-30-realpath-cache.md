@@ -200,7 +200,7 @@ So those opcode cache solutions won't notice the link change, and worse, they're
 What I find beeing the best solution for deployment to prevent this uncool mechanism to happen, is to prepare a totally new PHP worker pool, and load balance your FastCgi Handler onto it, giving up with the old one when all old workers have finished.
 
 This solution has many advantages : deploy A runs on memory pool A, and deploy B runs on memory pool B. End of story. We use memory image isolation to be absolutely sure that nothing will be shared between two deploys. Realpath cache, OPCode cache, etc... Everything is new.
-FastCGI pools load balancing is possible at least with Lighttpd abnd Nginx :-)
+FastCGI pools load balancing is possible at least with Lighttpd and Nginx :-)
 I experienced this solution on production, and it is rock solid !
 
 #End
