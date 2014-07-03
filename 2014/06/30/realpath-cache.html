@@ -149,17 +149,17 @@ misses, stressing your Kernel even more.
 The size is hard to compute theoretically. As we can see from the source code <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.c#643">in here</a>, each entry consume sizeof(realpath_cache_bucket) + the total number of characters of the resolved path + 1.
 To me (LP64), sizeof(realpath_cache_bucket) = 56 bytes.</p>
 
-<p>There is another trick. PHP resolves <strong>every paths it meets</strong> and split every path part, resolving it.
+<p>There is another trick. PHP resolves <strong>every paths it meets</strong> and splits every path part, resolving it.
 I explain : if you access the file "/home/julien/www/fooproject/app/web/entry.php", PHP is gonna split this path into as many single units
 as can fit. PHP is gonna resolve "/home", creating an entry for it into the cache. Then "/home/julien", then "/home/julien/www", etc..
 Why this ? Well, first this is used to check access at every level of directory. Secondly, because many PHP users tend to build their
-pathnames using string concatenations, PHP may have a change to have checked simple parts, it will then know if the user may access
+pathnames using string concatenations, PHP may have a chance to have checked simple parts, it will then know if the user may access
 it or not, by asking the realpath cache for details. A cache hit is very cheap.
 The source code of <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.c#750">tsrm_realpath_r()</a> details the procedure. this is a recursive function which gets called for every subpath entry, by default.</p>
 
 <p>As you can see from the preceding paragraph, better have a cache !</p>
 
-<p>This also shows that priming the cache by hitting few URLs from your website before opening it to public is important here as well. This will not only prime your OPcode cache, but also the realpath cache, and your Kernel's page cache as well.</p>
+<p>This also shows that priming the cache by hitting few URLs from your website before opening it to public just after a new deploy is important here as well. This will not only prime your OPcode cache, but also the realpath cache, and your Kernel's page cache as well.</p>
 
 <p>How to clear this cache ? The function is hidden in PHP. realpath_cache_clear() ? No, it doesn't exist, too bad :-)
 Welcome <em>clearstatcache(true)</em>.
@@ -262,7 +262,7 @@ So those opcode cache solutions won't notice the link change, and worse, they're
 <p>What I find beeing the best solution for deployment to prevent this uncool mechanism to happen, is to prepare a totally new PHP worker pool, and load balance your FastCgi Handler onto it, giving up with the old one when all old workers have finished.</p>
 
 <p>This solution has many advantages : deploy A runs on memory pool A, and deploy B runs on memory pool B. End of story. We use memory image isolation to be absolutely sure that nothing will be shared between two deploys. Realpath cache, OPCode cache, etc... Everything is new.
-FastCGI pools load balancing is possible at least with Lighttpd abnd Nginx :-)
+FastCGI pools load balancing is possible at least with Lighttpd and Nginx :-)
 I experienced this solution on production, and it is rock solid !</p>
 
 <h1 id="end">End<a href="#end" class="anchor">#</a></h1>

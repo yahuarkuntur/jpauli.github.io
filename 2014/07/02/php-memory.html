@@ -1,436 +1,69 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-    <title>Julien Pauli PHP&#039;s life</title>
-    <subtitle></subtitle>
-    <link href="http://jpauli.github.io//feed/index.atom" rel="self" />
-    <link href="http://jpauli.github.io//" />
-        <id>http://jpauli.github.io//</id>
-            <updated>2014-07-02T00:00:00+00:00</updated>
-            <entry>
-        <title>Reference mismatch in PHP function calls</title>
-                <id>http://jpauli.github.io//2014/06/27/references-mismatch.html</id>
-                <updated>2014-06-27T00:00:00+00:00</updated>
-        <author>
-            <name>Julien Pauli</name>
-            <email>jpauli@php.net</email>
-        </author>
-        <link rel="alternate" type="text/html" href="http://jpauli.github.io//2014/06/27/references-mismatch.html"/>
-        <content type="html" xml:lang="en"><![CDATA[<h2 id="a-recall-on-references">A recall on references<a href="#a-recall-on-references" class="anchor">#</a></h2>
-
-<p>Once again, a coworker just pinged me about a huge memory usage in a Symfony2 based project.
-What is bad about Symfony2 ecosystem, is that people tend to use everyone else's code, because it
-seems to fit the <strong>usage</strong> need. This is not bad as-is, but wait, what about the performance of the piece of code you're gonna
-heavily use ? Nowadays we want fast things, treating much more data than 10 years ago. I think it's time for programmers
-who ignore performance to start learning about it.</p>
-
-<p>Tons of PHP programmers are very nice technical guys
-at creating functionnal code, and what they call "nice code", you know, with tons of objects and interfaces everywhere...
-Fine, right ! But when it comes to write critical parts of code, where performance
-trully matter, here suddenly, noone stays on the scene.
-This is simply because unfortunately, many people just ignore how PHP works, let me refresh your mind ;-)</p>
-
-<p>So, usually the main problem comes about memory usage. When I hear "my code is eating a gigabyte of
-memory" , I just wonder if it has been designed to solve a problem as huge as its memory impact, or what ?
-Seriously...</p>
-
-<p>Memory usage, in PHP code, is not really hard to understand. PHP uses a reference counting mechanism
-to track variable usages, just like any other language, or even the Kernel itself to manage lists of ... many things.
-Reference counting is a really really common basic computer programming trick to save memory.</p>
-
-<p>PHP is very well designed (I'm serious). It tries to do its best to save memory while running your code.
-But should you know how reference counting works, you should know there are some situations you should avoid.</p>
-
-<p>I'm gonna talk about reference mimatch in PHP function calls here.</p>
-
-<h2 id="what-to-do-or-not-to-do">What to do or not to do ?<a href="#what-to-do-or-not-to-do" class="anchor">#</a></h2>
-
-<p>What you should do is not use references (&amp;) , until you really master what you do.</p>
-
-<p>More seriously, you should absolutely avoid <strong>reference mismatch</strong> when calling functions.
-This is absolutely awfull for PHP, as any mismatch will make it duplicate the variable's memory.
-If the variable is big (a very long string, a very complex array), then you're gonna start feeling it.
-Worse, you're gonna complain against PHP, which has nothing to do with that. The problem is you, and the
-code you are using.</p>
-
-<h2 id="what-is-a-reference-mismatch">What is a reference mismatch ?<a href="#what-is-a-reference-mismatch" class="anchor">#</a></h2>
-
-<p>A reference mimatch is when you call a function whose argument is expected to be passed by reference, and
-you pass it a non-reference, or the opposite case.</p>
-
-<p>Here are few examples :</p>
-
-<pre><code>function foo($arg) { }
-
-$a = "some var";
-$b = &amp;$a; /* turn $a and $b into references */
-
-foo($a); /* Reference mismatch */
-foo($b); /* idem */
-</code></pre>
-
-<p>!</p>
-
-<pre><code>function foo(&amp;$arg) { } /* this function accepts an arg by reference */
-
-$a = "some var";
-$b = $a; /* increment $a refcount so that the content is bound to two different variables */
-
-foo($a); /* reference mismatch */
-foo($b); /* idem */
-</code></pre>
-
-<p>So those both examples are things you should avoid. PHP will duplicate the memory of the argument before
-passing it to the function (this is true for every argument).</p>
-
-<h2 id="what-about-the-objects">What about the objects ?<a href="#what-about-the-objects" class="anchor">#</a></h2>
-
-<p>Objects are a special case. Let me be really clear : PHP never, ever, ever, duplicates an object in memory
-until you explicitely tells it to do so. And you only have one way to tell it to do so : the <strong>clone</strong> keyword.</p>
-
-<p>This is really easy to demonstrate :</p>
-
-<pre><code>function wow($arg) { var_dump('in function wow : ', memory_get_usage()); }
-
-$big = range(1, 1024*1024); /* This consumes lots of memory */
-$big2 = &amp;$big; /* $big and $big2 are both references to the same memory slot */
-
-var_dump('original memory', memory_get_usage());
-wow($big); /* $big is a reference, but the function accepts a non-reference : mismatch : duplicate memory */
-var_dump('final memory', memory_get_usage());
-</code></pre>
-
-<p>Result :</p>
-
-<pre><code>string(15) "original memory"
-int(151223288)
-string(18) "in function wow : "
-int(251886800)
-string(12) "final memory"
-int(151224488)
-</code></pre>
-
-<p>Here, there is a classical reference mismatch on a non-object, so PHP will duplicate the passed argument,
-which is a big array, so memory usage will raise significantely because PHP will duplicate (shallow copy) a very huge array
-(and this burns many CPU cycles as well). Sure, if you don't use the variable elsewhere, when the function call
-is finished, PHP destroys the function stack and cleans the dup memory. This, I repeat, if you don't use the argument
-elsewhere. This is just a <a href="http://en.wikipedia.org/wiki/Reference_counting">refcount strategy</a></p>
-
-<p>What about now using an object as passed arg ?</p>
-
-<pre><code>function wow($arg) { var_dump('in function wow : ', memory_get_usage()); }
-
-$big = range(1, 1024*1024); /* This consumes lots of memory */
-$obj = new StdClass; /* Create a basic object */
-$obj-&gt;big = $big; /* Turn this object into a BIG object by affecting one of its property to a huge var */
-$obj2 = &amp;$obj; /* Turn $obj into a reference, by linking it by reference to another variable */
-
-var_dump('original memory', memory_get_usage());
-wow($obj);
-var_dump('final memory', memory_get_usage());
-</code></pre>
-
-<p>Result:</p>
-
-<pre><code>string(15) "original memory"
-int(151223928)
-string(18) "in function wow : "
-int(151224040)
-string(15) "final memory"
-int(151223992)
-</code></pre>
-
-<p>This is a confirmation : PHP doesn't duplicate objects, because objects are internally reference counted themselves.
-Here, PHP just adds one more reference to the object, something that can't be done for other types.
-So yes : usually, using objects in PHP tend to decrease global memory usage, because if you were using references at some
-places, for objects, PHP won't duplicate memory container.</p>
-
-<p>This can easilly be spoted into PHP source code. Have a look at <a href="http://lxr.php.net/xref/PHP_5_5/Zend/zend_variables.c#106">zval_copy_ctor()</a>
-,the function called when PHP duplicate a variable. We can see that in the special case of an object,
-PHP just increments a counter, whereas for any other types, it really duplicates memory of the variable, which usually is
-not a bad thing as you don't use very big memory variables everytime, but cases happen where you'll carry a big array (with
-lots of slots) or a huge string (a result of a file_get_contents() for example).</p>
-
-<p>If you were curious about the duplication of arguments when a function is called, you should have a look at the
-<a href="http://lxr.php.net/xref/PHP_5_5/Zend/zend_vm_def.h#3182">ZEND_SEND_VAR</a> and <a href="http://lxr.php.net/xref/PHP_5_5/Zend/zend_vm_def.h#3145">ZEND_SEND_REF</a> opcodes</p>
-
-<h2 id="other-use-cases">Other use cases<a href="#other-use-cases" class="anchor">#</a></h2>
-
-<p>Any mismatch in function calls is bad. This is true also for internal functions, and some of them accept
-parameters by references, like <strong>array_shift()</strong> for example.
-When you use such functions, make sure to respect the references as well.</p>
-
-<p>But there are other tricks, which I consider not tricks, but just normal and logical behaviors.
-The case of func_get_args() is interesting :</p>
-
-<pre><code>function foo()
-{
-    var_dump('Before func_get_args()', memory_get_usage());
-    $args = func_get_args();
-    var_dump('After func_get_args()', memory_get_usage());
-}
-
-/*
-An example output with some big input variables could be :
-
-string(22) "Before func_get_args()"
-int(151222120)
-string(21) "After func_get_args()"
-int(251885904)
-*/
-</code></pre>
-
-<p>What you should know is that func_get_args() will duplicate all the passed variables to the function, ignoring references or not.
-It has to do so, because PHP has no way to know if you're gonna modify the variables later-on.
-You all agree that modifying a variable in $args here should not modify the passed arg right ?
-Example:</p>
-
-<pre><code>function foo()
-{
-    $args = func_get_args();
-    $args[0] = 'foo';
-}
-
-$str = 'bar';
-foo($str);
-
-// here, $str still owns the string 'bar', and not 'foo'
-</code></pre>
-
-<p>So PHP has to duplicate every variable passed on the function stack, when you call func_get_args().</p>
-
-<h2 id="end">End<a href="#end" class="anchor">#</a></h2>
-
-<p>Well, as I said, usually you don't carry over huge variables in PHP scripts. This is a pretty uncommon use case, however,
-as time pass and we ask PHP to build more and more complex systems, managing more and more data; knowing what happens
-behind the scene becomes more and more valuable.
-Scripting languages show advantages and drawbacks, and one should really master them all before choosing the right language.
-For example, I will not make PHP the first choice when talking about designing a language grammar parser.</p>]]></content>
-    </entry>
-        <entry>
-        <title>realpath_cache</title>
-                <id>http://jpauli.github.io//2014/06/30/realpath-cache.html</id>
-                <updated>2014-06-30T00:00:00+00:00</updated>
-        <author>
-            <name>Julien Pauli</name>
-            <email>jpauli@php.net</email>
-        </author>
-        <link rel="alternate" type="text/html" href="http://jpauli.github.io//2014/06/30/realpath-cache.html"/>
-        <content type="html" xml:lang="en"><![CDATA[<h2 id="introduction">Introduction<a href="#introduction" class="anchor">#</a></h2>
-
-<p>Do you know those PHP functions, realpath_cache_get(), realpath_cache_size() ?
-php.ini setting <em>realpath_cache</em> ?</p>
-
-<p>Realpath cache is a really important concept to know about, especially when it comes to play with symbolic links, a situation
-some meet when they deploy code.
-This setting is about performance and IO reduction of your server. It has been introducted in PHP 5.1 , when frameworks started
-to show in the PHP scene.</p>
-
-<h3 id="a-recall-on-the-stat-system-call">A recall on the stat system call<a href="#a-recall-on-the-stat-system-call" class="anchor">#</a></h3>
-
-<p>Ok, so, you know how your system works don't you ? Let me refresh your mind.
-When one want to play with a <em>path</em>, the Kernel and the filesystem must know exactly what you talk about.
-So, whenever you'll use a path to access a file (in the Unix meaning), you or your library or at least your Kernel will
-have to resolve it.
-Resolving a path is getting information about it : basically is it a file ? is it a directory or is it link ?</p>
-
-<p>The way to do this is by asking the system about the file type, and, in case of a symbolic link, the final file target.
-Whenever you use relative paths, such as <em>"../hey/./you/../foobar"</em>, you have to resolve them to full paths, and then resolve
-those full paths to file entities (Unix sense of "file", so a true file of any type or a directory or a link).</p>
-
-<p>Usually, for relative paths, you're gonna call the <a href="http://repo.or.cz/w/glibc.git/blob/edea402804bce917cfd7cd1af76212e6364c23db:/stdlib/canonicalize.c#l43">realpath() C function</a>. As you can see, <a href="http://repo.or.cz/w/glibc.git/blob/edea402804bce917cfd7cd1af76212e6364c23db:/stdlib/canonicalize.c#l161">it will lead to</a> a stat() system call.</p>
-
-<p>Calling stat() is heavy, first because this is a system call, needing a Kernel trap and a context switch, and also because it most likely asks the disk about metadata.
-The kernel source for stat() is at <a href="http://lxr.free-electrons.com/source/fs/stat.c#L190">http://lxr.free-electrons.com/source/fs/stat.c#L190</a>. Not surprinsingly, it leads to a FileSystem call (inode-&gt;getattr()).
-Usually, the kernel uses <a href="http://www.faqs.org/docs/linux_admin/buffer-cache.html">its buffer caches</a>, so the impact is really 
-tiny, but the buffer cache on a very busy server may not contain your information, thus an IO, which is something you'd prefer
-preventing as much as possible.</p>
-
-<h2 id="what-php-does">What PHP does ?<a href="#what-php-does" class="anchor">#</a></h2>
-
-<p>In PHP projects, we use many files. Nowadays, we use tons of classes, meaning tons of files (assuming one class per file).
-So, autoload or not, we'll have to include those files, we'll have to read them, we'll have to ask the Kernel for stat informations about them.
-That's why whenever you access a file in PHP, PHP tries to resolve the paths, resolve the links, get file informations; all this using the stat() system call, and then caches the result from this call into what is called the <strong>realpath cache</strong>.
-Many other softwares use a stat cache, read their source code and you'll notice that ;-)</p>
-
-<p>PHP will cache the result of the call, but only about the realpath. Any other information (owner, access rights, times ...) won't be
-cached in this cache, but in the last file access cache.</p>
-
-<p>As usual, we find the solution by having a look at the source code.
-Whenever you access a file in PHP, <a href="http://lxr.php.net/xref/PHP_5_5/main/fopen_wrappers.c#473">php_resolve_path()</a> is used.
-This function quickly calls <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.c#1925">tsrm_reapath()</a> which itself
-calls <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.c#1151">virtual_file_ex()</a> and finally, <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.c#750">tsrm_realpath_r()</a>.</p>
-
-<p>That's where things get interested. Functions like <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.c#830">realpath_cache_find()</a> are called, to lookup in a table if the stat informations have already been asked and cached for this
-specific path.</p>
-
-<p>A <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.h#211">realpath_cache_bucket</a> structure is used, which encapsulates many things :</p>
-
-<pre><code>typedef struct _realpath_cache_bucket {
-    unsigned long                  key;
-    char                          *path;
-    int                            path_len;
-    char                          *realpath;
-    int                            realpath_len;
-    int                            is_dir;
-    time_t                         expires;
-#ifdef PHP_WIN32
-    unsigned char                  is_rvalid;
-    unsigned char                  is_readable;
-    unsigned char                  is_wvalid;
-    unsigned char                  is_writable;
-#endif
-    struct _realpath_cache_bucket *next;
-} realpath_cache_bucket;
-</code></pre>
-
-<p>If the bucket is not found, <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.h#139">php_sys_lstat()</a> will be called, this function is a proxy to lstat(). Then finally, the bucket is <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.c#1139">saved into the realpath cache</a>.</p>
-
-<h2 id="php-settings-and-customization">PHP Settings and customization<a href="#php-settings-and-customization" class="anchor">#</a></h2>
-
-<p>So, in PHP, you have several things to know about realpath cache.
-First, the INI settings :</p>
-
-<ul><li><a href="http://www.php.net/manual/en/ini.core.php#ini.realpath-cache-size">realpath_cache_size</a></li>
-<li><a href="http://www.php.net/manual/en/ini.core.php#ini.realpath-cache-ttl">realpath_cache_ttl</a></li>
-</ul><p>The manual warns you, if you use files that are not modified often (production servers), you should increase the
-TTL.
-Also, the default size is ridiculously weak. 16K are gonna be filled in one web request, assuming a framework usage like Symfony2.
-Monitor your realpath_cache_get() return, you'll see that you hit the default 16K limit very soon. You'd better increase this value to something like 512K or even a megabyte.
-If your realpath cache is full, there is no space for other entries, and then PHP will start abusing the stat() call because of cache
-misses, stressing your Kernel even more.
-The size is hard to compute theoretically. As we can see from the source code <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.c#643">in here</a>, each entry consume sizeof(realpath_cache_bucket) + the total number of characters of the resolved path + 1.
-To me (LP64), sizeof(realpath_cache_bucket) = 56 bytes.</p>
-
-<p>There is another trick. PHP resolves <strong>every paths it meets</strong> and splits every path part, resolving it.
-I explain : if you access the file "/home/julien/www/fooproject/app/web/entry.php", PHP is gonna split this path into as many single units
-as can fit. PHP is gonna resolve "/home", creating an entry for it into the cache. Then "/home/julien", then "/home/julien/www", etc..
-Why this ? Well, first this is used to check access at every level of directory. Secondly, because many PHP users tend to build their
-pathnames using string concatenations, PHP may have a chance to have checked simple parts, it will then know if the user may access
-it or not, by asking the realpath cache for details. A cache hit is very cheap.
-The source code of <a href="http://lxr.php.net/xref/PHP_5_5/TSRM/tsrm_virtual_cwd.c#750">tsrm_realpath_r()</a> details the procedure. this is a recursive function which gets called for every subpath entry, by default.</p>
-
-<p>As you can see from the preceding paragraph, better have a cache !</p>
-
-<p>This also shows that priming the cache by hitting few URLs from your website before opening it to public just after a new deploy is important here as well. This will not only prime your OPcode cache, but also the realpath cache, and your Kernel's page cache as well.</p>
-
-<p>How to clear this cache ? The function is hidden in PHP. realpath_cache_clear() ? No, it doesn't exist, too bad :-)
-Welcome <em>clearstatcache(true)</em>.
-The true parameter is very important, it is called $clear_realpath_cache, so yes, obviously this is what we want to do.</p>
-
-<h2 id="an-example">An example<a href="#an-example" class="anchor">#</a></h2>
-
-<p>So here is an example.</p>
-
-<pre><code>&lt;?php
-$f = @file_get_contents('/tmp/bar.php');
-
-echo "hello";
-
-var_dump(realpath_cache_get());
-</code></pre>
-
-<p>And here is the result :</p>
-
-<pre><code>hello
-array(5) {
-  ["/home/julien.pauli/www/realpath_example.php"]=&gt;
-  array(4) {
-    ["key"]=&gt;
-    float(1.7251638834424E+19)
-    ["is_dir"]=&gt;
-    bool(false)
-    ["realpath"]=&gt;
-    string(43) "/home/julien.pauli/www/realpath_example.php"
-    ["expires"]=&gt;
-    int(1404137986)
-  }
-  ["/home"]=&gt;
-  array(4) {
-    ["key"]=&gt;
-    int(4353355791257440477)
-    ["is_dir"]=&gt;
-    bool(true)
-    ["realpath"]=&gt;
-    string(5) "/home"
-    ["expires"]=&gt;
-    int(1404137986)
-  }
-  ["/home/julien.pauli"]=&gt;
-  array(4) {
-    ["key"]=&gt;
-    int(159282770203332178)
-    ["is_dir"]=&gt;
-    bool(true)
-    ["realpath"]=&gt;
-    string(18) "/home/julien.pauli"
-    ["expires"]=&gt;
-    int(1404137986)
-  }
-  ["/tmp"]=&gt;
-  array(4) {
-    ["key"]=&gt;
-    float(1.6709564980243E+19)
-    ["is_dir"]=&gt;
-    bool(true)
-    ["realpath"]=&gt;
-    string(4) "/tmp"
-    ["expires"]=&gt;
-    int(1404137986)
-  }
-  ["/home/julien.pauli/www"]=&gt;
-  array(4) {
-    ["key"]=&gt;
-    int(5178407966190555102)
-    ["is_dir"]=&gt;
-    bool(true)
-    ["realpath"]=&gt;
-    string(22) "/home/julien.pauli/www"
-    ["expires"]=&gt;
-    int(1404137986)
-</code></pre>
-
-<p>What we can see, is that the full path to my example PHP file has been resolved, parts by parts.
-Then, as <em>/tmp/bar.php</em> doesn't exist on my disk, this entry is obviously missing from the cache. However, we can see that PHP
-resolved <em>/tmp</em>, so it now knows that it can access to /tmp, and any further resolution behind <em>/tmp</em> will be cheaper than the first one.</p>
-
-<p>In the array returned by realpath_cache_get(), you can see important information, such as the expires timestamp.
-This has been computed related to the realpath_cache_ttl setting, and the time the file has been accessed.
-The key field is a hash of the resolved path, a variant of <a href="http://www.isthe.com/chongo/tech/comp/fnv/index.html">FNV hash</a> is used, this
-is an internal information you shouldn't really need though (which may be integer or float, depending on your integer max size).</p>
-
-<p>Now, if you'd call clearstatcache(true), you'd reset this array and force PHP to stat() any new file access that was previously cached.</p>
-
-<h2 id="the-opcode-caches-case">The OPcode caches case<a href="#the-opcode-caches-case" class="anchor">#</a></h2>
-
-<p>Ready for another trick ?</p>
-
-<p><strong>The realpath cache is process bound, and not shared into shared memory</strong></p>
-
-<p>This means that anytime a cache entry expires, changes, or you empty the cache manually, you have to do this <strong>for every process in your pool</strong>.
-This is usually why people fail at deploying code using OPCode caches solutions.
-What people usually do when deploying, is changing a symlink from say /www/deploy-a to /www/deploy-b. What they usually forget is that opcode cache solutions (at least OPCache and APC) rely on the internal realpath cache from PHP.
-So those opcode cache solutions won't notice the link change, and worse, they're gonna start noticing it little by little, as the realpath cache of every entry slowly expires. You know the result.</p>
-
-<p>What I find beeing the best solution for deployment to prevent this uncool mechanism to happen, is to prepare a totally new PHP worker pool, and load balance your FastCgi Handler onto it, giving up with the old one when all old workers have finished.</p>
-
-<p>This solution has many advantages : deploy A runs on memory pool A, and deploy B runs on memory pool B. End of story. We use memory image isolation to be absolutely sure that nothing will be shared between two deploys. Realpath cache, OPCode cache, etc... Everything is new.
-FastCGI pools load balancing is possible at least with Lighttpd and Nginx :-)
-I experienced this solution on production, and it is rock solid !</p>
-
-<h1 id="end">End<a href="#end" class="anchor">#</a></h1>
-
-<p>I've been asked to write some lines about realpath cache, probably because people had bad experience about it (I think at code deployment). Well, now you know how it works, why it's here and how and why to customize it. Did I forget anything ?</p>]]></content>
-    </entry>
-        <entry>
-        <title>PHP memory and Zend Memory Manager</title>
-                <id>http://jpauli.github.io//2014/07/02/php-memory.html</id>
-                <updated>2014-07-02T00:00:00+00:00</updated>
-        <author>
-            <name>Julien Pauli</name>
-            <email>jpauli@php.net</email>
-        </author>
-        <link rel="alternate" type="text/html" href="http://jpauli.github.io//2014/07/02/php-memory.html"/>
-        <content type="html" xml:lang="en"><![CDATA[<h2 id="introduction">Introduction<a href="#introduction" class="anchor">#</a></h2>
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <title>PHP memory and Zend Memory Manager</title>
+
+    <meta name="description" content="">
+    <meta name="author" content="Julien Pauli">
+    <meta name="viewport" content="width=device-width">
+
+    
+    <link rel="canonical" href="http://jpauli.github.io//2014/07/02/php-memory.html"/>
+              <link rel="alternate" href="http://jpauli.github.io//feed/atom.xml" type="application/atom+xml" title="Julien Pauli PHP&#039;s life"/>
+      
+        <link rel="stylesheet" href="../../../css/bootstrap.min.css"><link rel="stylesheet" href="../../../css/bootstrap-responsive.min.css"><link rel="stylesheet" href="../../../css/main.css"><link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/pojoaque.min.css">    
+    <script src="../../../js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
+  </head>
+
+  <body>
+    <!--[if lt IE 7]>
+        <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
+    <![endif]-->
+
+    
+          <div class="navbar navbar-fixed-top">
+          <div class="navbar-inner">
+              <div class="container">
+                  <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                      <span class="icon-bar"></span>
+                      <span class="icon-bar"></span>
+                      <span class="icon-bar"></span>
+                  </a>
+                  <a class="brand" href="../../..">Julien Pauli PHP&#039;s life</a>
+                  <div class="nav-collapse collapse">
+                    <ul class="nav">
+                                                                                                            <li><a href="../../../about.html">About</a></li>
+                                                            <li><a href="../../../index.html">Welcome to julien pauli&#039;s page</a></li>
+                                                                                                </ul>
+                                      </div>
+              </div>
+          </div>
+      </div>
+    
+    
+          <div class="container">
+
+        
+                  <div class="row">
+            <div class="span10 offset1 content">
+                                                <div class="page-header">
+                    <h1>PHP memory and Zend Memory Manager</h1>
+                  </div>
+                              
+                <article>
+    <div class="pull-right date">
+      <i class="icon-calendar"></i>
+      Jul 2nd, 2014
+    </div>
+
+    <div class="body">
+      <h2 id="introduction">Introduction<a href="#introduction" class="anchor">#</a></h2>
 
 <p>This blog post is gonna introduce you the dynamic memory management layer PHP relies on : Zend Memory Manager (ZendMM). We'll detail why we need such a layer, what it does, how to customize it, how to interact with it from PHP land.</p>
 
@@ -1118,6 +751,34 @@ Let's keep going :</p>
 
 <p>In any case, PHP is build with ZendMM, so you benefit from it, from its very complex lines of codes, without having noticing it yet. Am I wrong ? Memory allocation in a programm can easilly turn to nightmare when you want to take in consideration all the parts : leaks, performance, thread safety, etc...</p>
 
-<p>You can read many articles about allocators (low level ones) on the web, starting by <a href="http://locklessinc.com/benchmarks_allocator.shtml">Benchmarks of the Lockless Memory Allocator</a> or <a href="https://www.facebook.com/notes/facebook-engineering/scalable-memory-allocation-using-jemalloc/480222803919">Scalable memory allocation using jemalloc</a>.</p>]]></content>
-    </entry>
-    </feed>
+<p>You can read many articles about allocators (low level ones) on the web, starting by <a href="http://locklessinc.com/benchmarks_allocator.shtml">Benchmarks of the Lockless Memory Allocator</a> or <a href="https://www.facebook.com/notes/facebook-engineering/scalable-memory-allocation-using-jemalloc/480222803919">Scalable memory allocation using jemalloc</a>.</p>
+    </div>
+
+      </article>
+            </div>
+          </div>
+        
+                          <footer>
+            <p>
+              &copy;
+                              <a href="http://jpauli.github.io/">
+                  Julien Pauli
+                </a>
+                            2014
+              <small>
+                with help from <a href="http://carew.github.com/" target="_blank">Carew</a>
+              </small>
+            </p>
+          </footer>
+        
+      </div>
+    
+    
+              <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+      <script>window.jQuery || document.write('<script src="../../../js/vendor/jquery-1.9.0.min.js"><\/script>')</script>
+      <script src="../../../js/vendor/bootstrap.min.js"></script>
+      <script src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script>
+    
+      </body>
+</html>
