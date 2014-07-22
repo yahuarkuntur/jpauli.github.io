@@ -14,7 +14,7 @@ PHP communicates with MySQL through a connector. 2 of them exist : libmysql or m
 If a user wants to communicate with MySQL using the PHP language, this latter publishes 3 APIs in this goal : ext/mysql, ext/mysqli and ext/pdo_mysql.
 
 ![libmysql](../../../img/php-mysql-com/php-arch-libmysql.png)
-![mysqlnd](../../../img/php-mysql-com/php-arch-libmysql.png)
+![mysqlnd](../../../img/php-mysql-com/php-arch-mysqlnd.png)
 
 ### Connectors
 
@@ -153,7 +153,7 @@ By trying to satisfy every soul on earth, PDO created an API that is full of tra
 
 ## Zoom on the mysqli extension
 
-mysqli is a nice extension, really. Nowadays, everybody uses PDO, because if you were to switch from one RDBMS to an other, this would ease many things. I don't know you, but I've never met such a situation. If you use MySQL RDBMS, and you are pretty unlikely to change (in production), which usually is the case : don't use PDO, you'll lose many things and suffer from one more layer of abstraction which can't offer everything the RDBMS can offer.
+mysqli is a nice extension, really. Nowadays, everybody uses PDO, the main argument about this is if you were to switch from one RDBMS to an other, this would ease many things. I don't know you, but I've never met such a situation. If you use MySQL RDBMS, and you are pretty unlikely to change (in production), which usually is the case : don't use PDO, you'll lose many things and suffer from one more layer of abstraction which can't offer everything the RDBMS can offer. Have a look at mysqli API and notice how rich it is :
 
 ![mysqli](../../../img/php-mysql-com/mysqli-api.jpg)
 
@@ -186,7 +186,7 @@ mysqli can even tell you when you miss an index :
 
 MySQL communicates many things with its client (PHP in our case). For more information, you should read the [MySQL client/server protocol documentation](http://dev.mysql.com/doc/internals/en/client-server-protocol.html)
 
-Second thing : mysqli provides a function to change the character set : mysqli_set_character_name(). You should never use "SET NAMES" query, because the escaping strategies won't use it.
+Second thing : mysqli provides a function to change the character set : ``mysqli_set_character_name()``. You should never use "SET NAMES" query, because the escaping strategies won't use it.
 You can read more info about this at [http://php.net/mysqlinfo.concepts.charset.php](http://php.net/mysqlinfo.concepts.charset.php) or [http://dev.mysql.com/doc/refman/5.7/en/charset-connection.html](http://dev.mysql.com/doc/refman/5.7/en/charset-connection.html)
 
 Now, let's talk about buffered queries, which is a very obscur part.
@@ -194,7 +194,7 @@ When you query MySQL for results, so usually when you use SELECT queries, a resu
 
 Please, note that we are talking about direct queries and not prepared statements, which are not the same at all. We'll give a word about prepared statements later on.
 
-By default, every direct query issued from mysqli to MySQL is buffered, this means that at the time you issue a ``mysqli_query()`` call, all the resultset is transmitted over the wire, back to PHP memory, and freed from the MySQL side. As the resultset resides on the PHP part, you can count it : ``mysqli_num_rows()``, and you can seek into it at any place : ``mysqli_data_seek()`` and you can issue another query() while the resultset is not freed yet. Let's show an example :
+By default, every direct query issued from mysqli to MySQL is buffered, this means that at the time you issue a ``mysqli_query()`` call, all the resultset is transmitted over the wire, back to PHP memory, and freed from the MySQL side. As the resultset resides on the PHP part, you can count it : ``mysqli_num_rows()``, you can seek into it at any place : ``mysqli_data_seek()`` and you can issue another query() while the resultset is not freed yet. Let's show an example :
 
 	$mysqli = mysqli_connect(/*...*/);
 
@@ -207,9 +207,9 @@ By default, every direct query issued from mysqli to MySQL is buffered, this mea
 	/* Should we not need this resultset anymore, let's free it, which will free memory :*/
 	mysqli_free_result($result);
 
-This is classical and default case. Remember that the whole resultset is immediately transmitted by MySQL to PHP, so if you expect it to be big, like if you selected very large blob columns or a lot of results, PHP's memory footprint will increase proportionally. However, you will not be able to see this memory footprint using ``memory_get_usage()`` until you use mysqlnd as low level connector. We'll detail this later.
+This is classical and default case. Remember that the whole resultset is immediately transmitted by MySQL to PHP, so if you expect it to be big, like if you selected very large blob columns or a lot of results, PHP's memory footprint will increase proportionally. However, you will not be able to see this memory footprint using ``memory_get_usage()`` nor will it be accounted into *memory_limit* until you use mysqlnd as low level connector. We'll detail this later.
 
-If you'd like to issue the same request using non buffered result set, you'll use the MYSQLI_USE_RESULT flag. But be carefull, if you use a non buffered resultset, this means that the resultset will be allocated on the MySQL side (into the MySQL process memory) for your connection, and MySQL can only store one resultset by connection, which means you won't be able to re-issue another direct query on this connection until you freed the resultset. Also, as the resultset is not stored on the PHP side, it is not possible you seek into it, nor you count how many results are in :
+If you'd like to issue the same request using non buffered result set, you'll use the *MYSQLI_USE_RESULT* flag. But be carefull, if you use a non buffered resultset, this means that the resultset will be allocated on the MySQL side (into the MySQL process memory) for your connection, and MySQL can only store one resultset by connection, which means you won't be able to re-issue another direct query on this connection until you freed the resultset. Also, as the resultset is not stored on the PHP side, it is not possible you seek into it, nor you count how many results are in :
 
 	$mysqli = mysqli_connect(/*...*/);
 
@@ -227,13 +227,14 @@ If you'd like to issue the same request using non buffered result set, you'll us
 	$result2 = mysqli_query($mysqli, "SELECT name FROM membres", MYSQLI_USE_RESULT);
 
 ``mysqli_free_result()`` frees the resultset, should it be stored on the PHP side or MySQL side.
+By default, any direct query is issued in buffered mode because the MySQL server has other things to do than allocating memory to store every of its clients' resultsets.
 
 
 Now, let's talk about prepared statements.
 
 Prepared statements are very different from traditionnal direct queries :
 
-*	Prepared statements don't use the same underlying protocol as direct queries. The protocol is called the binary protocol, it is very otpimized and offers many things such as true data type bindings.
+*	Prepared statements don't use the same underlying protocol as direct queries. The protocol is called the binary protocol, it is very optimized and offers many things such as true data type bindings.
 *	Prepared statements resultsets are not buffered by default. This is the opposite as direct queries resultsets.
 
 Let's start by dumping the protocol for a direct query :
@@ -275,14 +276,6 @@ anymore. Should you remember your type sizes, transmitting for example a TINYINT
 	/*
 	int(62)
 	int(64)
-	int(65)
-	int(66)
-	int(67)
-	int(68)
-	int(69)
-	int(70)
-	int(71)
-	int(72)
 	*/
 
 The example above shows clearly that PHP recovers integers, not strings any more.
@@ -314,7 +307,7 @@ It is however possible to keep types using the text protocol. This will need the
 
 If we talk about the resultset of a prepared statement, it is not buffered by default, every fetch() operation will trigger a network communication. You may however buffer those resultsets, using ``mysqli_stmt_store_result()``.
 
-	$m = mysqli_connect(/* params */);
+	$m = mysqli_connect(/* */);
 	$ps = mysqli_prepare($m, 'SELECT id, name FROM Users LIMIT 1000');
 	mysqli_stmt_execute($ps);
 	mysqli_stmt_bind_result($ps, $id, $name);
@@ -328,7 +321,7 @@ If we talk about the resultset of a prepared statement, it is not buffered by de
 	mysqli_stmt_close($ps);
 
 We've seen we still can buffer the resultset if we want to, but with prepared statements it is necessary to bind every result column to a PHP variable to be able to read some useful data.
-Once more, if you use mysqlnd, you'll have access to mysqli_stmt_get_result(), which will turn a prepared statement resultset into a mysqli_result, and you'll be back using a direct-query-like API, but with prepared statements :
+Once more, if you use mysqlnd, you'll have access to ``mysqli_stmt_get_result()``, which will turn a prepared statement resultset into a mysqli_result, and you'll be back using a direct-query-like API, but with prepared statements :
 
 	$m = mysqli_connect(/* params */);
 	$ps = mysqli_prepare($m, 'SELECT id, name FROM Users LIMIT 1000');
@@ -345,7 +338,7 @@ Once more, if you use mysqlnd, you'll have access to mysqli_stmt_get_result(), w
 
 ## Zoom on mysqlnd
 
-We've seen so far that mysqlnd acts as a hidden extension which adds many features to the existing APIs, especially mysqli (this is true for PDO as well).
+We've seen so far that mysqlnd acts as a hidden extension which adds many features to the existing APIs, especially mysqli (this is true for PDO as well but lesser).
 Let's now detail other parts of mysqlnd.
 
 ### Memory savings
@@ -391,6 +384,7 @@ Let's prove what we say :
 
 With libmysql, here are the numbers :
 
+	> phplibmysql/bin/php poc_mysqli.php
 	initial memory ->3348 kB
 	resultSet stored ->72724 kB
 	query result saved ->149012 kB
@@ -401,9 +395,9 @@ With libmysql, here are the numbers :
 As you can see, as soon as the ``mysqli_query()`` is executed, all the resultset is transmitted into PHP's memory. On this example, the memory raises from 3Mb to 70Mb ! (this is a true, real life example).
 This is normal behavior as by default, direct queries are in buffered mode. What is important to understand here is that the resultset memory buffer **has been allocated by the communication library : libmysql**. And when it comes to turn this resultset to something PHP can use, fetch it into an array, **the entire data into the resultset will be duplicated in memory**, resulting in an enormous waste.
 
-As the resultset buffer is allocated by libmysql, it wont show into memory_get_usage(), but you'll need to monitor your process heap to see that (like its done in the example using /proc).
+As the resultset buffer is allocated by libmysql, it wont show into ``memory_get_usage()``, but you'll need to monitor your process heap to see that (like its done in the example using */proc*).
 
-So transforming the data from a resultset into a PHP variable blows up the memory. At this stage, libmysql buffer is still allocated and the data is fully duplicated into buckets of a PHP array, thus we are consuming now about 140Mb. Let's convince ourselves about those allocation by running valgrind memory analyzer with massif :
+So transforming the whole data from a resultset into a PHP variable blows up the memory. At this stage, libmysql buffer is still allocated and the data is fully duplicated into buckets of a PHP array, thus we are consuming now about 140Mb. Let's convince ourselves about those allocation by running valgrind memory analyzer with massif :
 
 	99.92% (257,473,815B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
 	->52.90% (136,314,880B) 0x69A01E: _zend_mm_alloc_int (zend_alloc.c:1908)
@@ -429,13 +423,13 @@ So transforming the data from a resultset into a PHP variable blows up the memor
 	| | |           ->45.83% (118,096,024B) 0x663D0C: php_execute_script (main.c:2308)
 	| | |             ->45.83% (118,096,024B) 0x73BCDC: main (php_cli.c:1184)
 
-my_alloc() is libmysql's allocator on top of malloc.
+my_malloc() is libmysql's allocator on top of malloc.
 
-To free the resultset libmysql's keeping warm, you must call mysqli_free_result(). We can see that we fall back to about 70Mb after this call, and then, when we finally free the PHP array containing a copy of the resultset, we drop back to initial memory usage (on average, some cache systems may trigger, this is not leaked memory).
+To free the resultset libmysql's keeping warm, you must call ``mysqli_free_result()``. We can see that we fall back to about 70Mb after this call, and then, when we finally free the PHP array containing a copy of the resultset, we drop back to initial memory usage (on average, some cache systems may trigger, this is not leaked memory).
 
 This duplication from libmysql's buffer to PHP memory can be prevented using mysqlnd. mysqlnd will benefit from the copy on write behavior of PHP zvals to save those copies. Let's show that :
 
-	phpmysqlnd/bin/php poc_mysqli.php
+	> phpmysqlnd/bin/php poc_mysqli.php
 	initial memory ->3208 kB
 	resultSet stored ->70452 kB
 	query result saved ->71220 kB
@@ -444,11 +438,13 @@ This duplication from libmysql's buffer to PHP memory can be prevented using mys
 	Db closed ->19196 kB
 
 As you can see, when the buffered resultset is fetched into a PHP array, the memory does not move. Far from beeing multiplied by two hun ?
-At the time you'll start writing into this array, thus modifying the fetched results, PHP will duplicate the result on a case by case basis, which is really cool for memory usage.
-Also, mysqlnd used the PHP memory allocator to store the resultset into its own buffer, the memory usage is shared with PHP, and ``memory_get_usage()`` will show this memory.
+Only at the time you'll start writing into this array (should you write into it), thus modifying the fetched results, PHP will duplicate the result on a case by case basis, which is really cool for memory usage. If you stay with a read-only approach, then you'll save lots of memory.
+Also, mysqlnd used the PHP memory allocator to store the resultset into its own buffer, the memory usage is shared with PHP, and ``memory_get_usage()`` will show this memory and you could also hit the *memory_limit* PHP setting.
 
 Knowing that apps mainly SELECT data, then fetches them to usually display them (read only), it is a pure waste to still use libmysql as low level communication for such use cases.
 And I don't talk about batch scripts, written in PHP, treating lots of data from MySQL, and from where people often complain about memory usage... It's not PHP's fault you know ;-)
+
+Another approach would also be to prevent any "fetch all" operation. PDO's got such an API : ``$stmt->fetchAll()``, which transforms all the resultset into a PHP variable. It is way better for memory usage to seek into the resultset and consume the actual data, then loop to the next one, than looping once and turning any row into a PHP array bucket. *PDOStatement* even implements *Traversable*, and is then usable using foreach, same for mysqli_result.
 
 ### Statistics
 
@@ -462,7 +458,7 @@ Here are some useful questions mysqlnd can answer very easily without requiring 
 *	How many MySQL active connections do I have ?
 *	How many MySQL connection errors PHP met so far ?
 *	How many queries have been prepared, but not executed (which is a waste of performance) ?
-*	How many queries have been prepared, but used only once (prepared statements are useful if you reuse them, if not, its often a waste of bandwidth) ?
+*	How many queries have been prepared, but used only once (prepared statements are useful if you reuse them, if not, its often a waste of bandwidth)
 *	How many queries have queried for columns but have not fetched them (waste of bandwidth and memory )?
 *	How many MySQL slow queries happened so far ?
 *	How many queries not using an index ?
@@ -476,7 +472,7 @@ mysqlnd can answer all those questions. Let's see :
 	$data = mysqli_fetch_row($result);
 	do_something($data);
 	mysqli_free_result($result);
-	var_dump(mysqli_get_connection_stats($db)); /* nly available under mysqlnd */
+	var_dump(mysqli_get_connection_stats($db)); /* only available under mysqlnd */
 
 	/*
 	["buffered_sets"]=>
@@ -544,7 +540,5 @@ mysqlnd_uh : UserHandler Hooks : Write your own plugin using PHP (and not C). Br
 ## Conclusion
 
 So, I hope you know have a better understanding on how PHP communicates with MySQL servers. I also hope you noticed how mysqlnd can help you implementing so many ideas, and how its licence allows you to do the same things you'd do using just PHP and the PHP licence.
+
 Special thanks to Ulf Wendel, Andrey Hristov, Georg Richter and Johannes Schlüter ; main mysqlnd creators.
-
-
-
