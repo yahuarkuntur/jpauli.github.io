@@ -70,7 +70,7 @@ and how to use it.</p>
 
 <h2 id="foresee">Foresee<a href="#foresee" class="anchor">#</a></h2>
 
-<p>PHP communicates with MySQL through a connector. 2 of them exist : libmysql or mysqlnd. libmysql is developed by Oracle, while mysqlnd is developed by the PHP team.
+<p>PHP communicates with MySQL through a connector. 2 of them exist : libmysql or mysqlnd. libmysql is licenced by Oracle, while mysqlnd is under the PHP licence. Both code bases are mostly maintained by Oracle employees.
 If a user wants to communicate with MySQL using the PHP language, this latter publishes 3 APIs in this goal : ext/mysql, ext/mysqli and ext/pdo_mysql.</p>
 
 <p><img src="../../../img/php-mysql-com/php-arch-libmysql.png" alt="libmysql"><img src="../../../img/php-mysql-com/php-arch-mysqlnd.png" alt="mysqlnd"></p>
@@ -118,13 +118,13 @@ The libmysql documentation is detailed, and online, at <a href="http://dev.mysql
 <p>As you could have noticed, the PHP extensions "mysql" and "mysqli" borrow this C API to publish it to PHP land. This is one of the PHP way of doing things : when an extension creator embeds a C API
 into PHP's source to publish it to PHP user land, usually he gives it the same API as the C one, this way when you know one of them, you are not lost getting hands into the second one.</p>
 
-<p>libmysql however brings two problems to your architecture :</p>
+<p>libmysql however could bring some problems to your architecture :</p>
 
 <ul><li>The licencing is complex. For example, if you wish to build a closed-source commercial product on top of libmysql, you'll need to pay for a licence. <a href="http://www.mysql.com/about/legal/licensing/oem/">Details about libmysql licencing here</a>.</li>
-<li>Updating libmysql involves updating the MySQL server, which sometimes is not what you want in your upgrading strategies.</li>
+<li>Updating libmysql involves updating the MySQL server in certain distros, which sometimes is not what you want in your upgrading strategies.</li>
 </ul><h4 id="mysqlnd">mysqlnd<a href="#mysqlnd" class="anchor">#</a></h4>
 
-<p>As of PHP5.3, the PHP developers rewrote entirely the libmysql source code, into a PHP extension named "mysqlnd". mysql native driver. This connector is licenced under the PHP licence, which is much more appropriate than the complex Oracle's licences for any PHP software, should it be closed or open source.</p>
+<p>As of PHP5.3, the PHP developers rewrote entirely the libmysql source code, into a PHP extension named "mysqlnd". mysql native driver. This connector is licenced under the PHP licence, which is more appropriate than the Oracle's licences as all stay under the same PHP licence.</p>
 
 <p>Also, rewriting the code of a library that was not part of PHP (libmysql) was also the way to improve many things in the MySQL-PHP communication. We'll detail how mysqlnd can improve your application performance drastically, especially if this one runs big select queries (batch scripts are the appropriate use case here).</p>
 
@@ -600,6 +600,8 @@ Notice : "You didn't use *4* selected results"
 </code></pre>
 
 <p>Nice, knowing that this particular behavior is really common is userland. So many applications run queries selecting tons of result, but only effectively using part of them.</p>
+
+<p>If you are using Symfony2 applications, you may use <a href="https://packagist.org/packages/js/mysqlnd-bundle">https://packagist.org/packages/js/mysqlnd-bundle</a> or <a href="https://packagist.org/packages/js/mysqlnd-analytics">https://packagist.org/packages/js/mysqlnd-analytics</a></p>
 
 <h3 id="plugins">Plugins<a href="#plugins" class="anchor">#</a></h3>
 

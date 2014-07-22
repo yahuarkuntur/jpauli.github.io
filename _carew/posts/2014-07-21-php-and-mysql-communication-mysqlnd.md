@@ -10,7 +10,7 @@ and how to use it.
 
 ## Foresee
 
-PHP communicates with MySQL through a connector. 2 of them exist : libmysql or mysqlnd. libmysql is developed by Oracle, while mysqlnd is developed by the PHP team.
+PHP communicates with MySQL through a connector. 2 of them exist : libmysql or mysqlnd. libmysql is licenced by Oracle, while mysqlnd is under the PHP licence. Both code bases are mostly maintained by Oracle employees.
 If a user wants to communicate with MySQL using the PHP language, this latter publishes 3 APIs in this goal : ext/mysql, ext/mysqli and ext/pdo_mysql.
 
 ![libmysql](../../../img/php-mysql-com/php-arch-libmysql.png)
@@ -58,14 +58,14 @@ The libmysql documentation is detailed, and online, at [http://dev.mysql.com/doc
 As you could have noticed, the PHP extensions "mysql" and "mysqli" borrow this C API to publish it to PHP land. This is one of the PHP way of doing things : when an extension creator embeds a C API
 into PHP's source to publish it to PHP user land, usually he gives it the same API as the C one, this way when you know one of them, you are not lost getting hands into the second one.
 
-libmysql however brings two problems to your architecture :
+libmysql however could bring some problems to your architecture :
 
 *	The licencing is complex. For example, if you wish to build a closed-source commercial product on top of libmysql, you'll need to pay for a licence. [Details about libmysql licencing here](http://www.mysql.com/about/legal/licensing/oem/).
-*	Updating libmysql involves updating the MySQL server, which sometimes is not what you want in your upgrading strategies.
+*	Updating libmysql involves updating the MySQL server in certain distros, which sometimes is not what you want in your upgrading strategies.
 
 #### mysqlnd
 
-As of PHP5.3, the PHP developers rewrote entirely the libmysql source code, into a PHP extension named "mysqlnd". mysql native driver. This connector is licenced under the PHP licence, which is much more appropriate than the complex Oracle's licences for any PHP software, should it be closed or open source.
+As of PHP5.3, the PHP developers rewrote entirely the libmysql source code, into a PHP extension named "mysqlnd". mysql native driver. This connector is licenced under the PHP licence, which is more appropriate than the Oracle's licences as all stay under the same PHP licence.
 
 Also, rewriting the code of a library that was not part of PHP (libmysql) was also the way to improve many things in the MySQL-PHP communication. We'll detail how mysqlnd can improve your application performance drastically, especially if this one runs big select queries (batch scripts are the appropriate use case here).
 
@@ -524,6 +524,8 @@ Let's extend MySQLi class to have a simple log about this waste :
 	*/
 
 Nice, knowing that this particular behavior is really common is userland. So many applications run queries selecting tons of result, but only effectively using part of them.
+
+If you are using Symfony2 applications, you may use [https://packagist.org/packages/js/mysqlnd-bundle](https://packagist.org/packages/js/mysqlnd-bundle) or [https://packagist.org/packages/js/mysqlnd-analytics](https://packagist.org/packages/js/mysqlnd-analytics)
 
 ### Plugins
 
