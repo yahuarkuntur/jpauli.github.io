@@ -33,7 +33,7 @@ Here is an example :
 	   this bloc of memory */
 	int myint;
 	 
-	char *myfonction(int i)
+	char *myfunction(int i)
 	{
 		/* Static allocation, static variable
 	   the compiler takes care of everything, but won't free
