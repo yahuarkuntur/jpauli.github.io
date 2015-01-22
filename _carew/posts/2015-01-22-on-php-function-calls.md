@@ -23,7 +23,7 @@ Beeing about 20% slower than
 Which is perfectly normal.
 
 Hang on. You were going to stop reading here, to go browse your codebase and replace ``strlen()`` calls by ``isset()`` calls. So that's why I stopped you.
-If you read carefully [http://blog.blackfire.io/owncloud.html](the original blog post), this performance result boost of about 20% is obtained because ``strlen()`` was used in a loop
+If you read carefully [the original blog post](http://blog.blackfire.io/owncloud.html), this performance result boost of about 20% is obtained because ``strlen()`` was used in a loop
 of about 60 to 80K iterations (60,000 to 80,000).
 
 ## Why such a result ?
