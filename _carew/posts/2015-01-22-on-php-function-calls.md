@@ -5,7 +5,7 @@ title:  On PHP function calls
 
 ## Introducting the facts
 
-This blog post is a technical explanation of a PHP optimization found with [BlackFire profiler](http://www.blackfire.io) into a PHP script.
+This blog post is a technical explanation of a PHP optimization found with [Blackfire profiler](https://blackfire.io/) into a PHP script.
 The related post is located here : [http://blog.blackfire.io/owncloud.html](http://blog.blackfire.io/owncloud.html)
 
 Basically, it concludes with :
@@ -445,7 +445,7 @@ This case really looks like a constant, but I think you understood the base line
 
 The first tip I would like to share with you, is to not blindly change your code, everywhere you have a good feeling of it.
 Profile. Profile, and see the results.
-With profilers such as [BlackFire](http://www.blackfire.io), you can immeditely see the hot path of your script, because it automaticaly trashes the irrelevant
+With profilers such as [Blackfire](https://blackfire.io/), you can immeditely see the hot path of your script, because it automaticaly trashes the irrelevant
 information that usually catch your eyes when you read a profile.
 You then know _where_ to start working, because your work costs money, and for it to be worth it, it has to be optimized as well.
 That's a nice balance between the money you'll cost optimizing a script, and the money you'll save because your cloud will be smaller
@@ -489,7 +489,7 @@ Profile your script and verify those assumptions by yourself, do not blindly app
 
 We, at Blackfire engineer team, spend many time finding interesting metrics to show our PHP users. We use our deep knowledge of the PHP
 engine to gather many items showing you what's happening into the deepness of your PHP scripts.
-Even if the GUI doesn't show it yet, BlackFire probe extension measures many things, like when the garbage collector has been triggered, what it does, how many objects you created/destroyed in your functions, how many reference mismatch you performed when calling your functions, and even deeper metrics, such as session serialization time, ``foreach()`` bad behaviors (there are many things to say about foreach())... basicaly, everything that may help a developer find performance spots, and how to fix them.
+Even if the GUI doesn't show it yet, Blackfire probe extension measures many things, like when the garbage collector has been triggered, what it does, how many objects you created/destroyed in your functions, how many reference mismatch you performed when calling your functions, and even deeper metrics, such as session serialization time, ``foreach()`` bad behaviors (there are many things to say about foreach())... basicaly, everything that may help a developer find performance spots, and how to fix them.
 
 Also, don't forget that you will at some point hit the limits of the language. Then it will probably be time to switch it.
 PHP is not the right language to build an ORM, to make a video game, to create an HTTP server, to batch process some text based files or to create a parser of any kind.
