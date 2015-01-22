@@ -1951,7 +1951,7 @@ The related post is located here : <a href="http://blog.blackfire.io/owncloud.ht
 <p>Which is perfectly normal.</p>
 
 <p>Hang on. You were going to stop reading here, to go browse your codebase and replace <code>strlen()</code> calls by <code>isset()</code> calls. So that's why I stopped you.
-If you read carefully [http://blog.blackfire.io/owncloud.html](the original blog post), this performance result boost of about 20% is obtained because <code>strlen()</code> was used in a loop
+If you read carefully <a href="http://blog.blackfire.io/owncloud.html">the original blog post</a>, this performance result boost of about 20% is obtained because <code>strlen()</code> was used in a loop
 of about 60 to 80K iterations (60,000 to 80,000).</p>
 
 <h2 id="why-such-a-result">Why such a result ?<a href="#why-such-a-result" class="anchor">#</a></h2>
